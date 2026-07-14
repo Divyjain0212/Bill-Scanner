@@ -14,7 +14,7 @@ axios.interceptors.request.use((config) => {
 axios.interceptors.response.use(
   response => response,
   error => {
-    if (error.response && error.response.status === 403) {
+    if (error.response && (error.response.status === 403 || error.response.status === 401)) {
       window.dispatchEvent(new CustomEvent('auth-error', { detail: error.response.data.error }));
     }
     return Promise.reject(error);

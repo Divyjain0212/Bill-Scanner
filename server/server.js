@@ -83,7 +83,7 @@ app.use('/api/bills', async (req, res, next) => {
       req.user = payload;
       next();
     } catch (tokenError) {
-      return res.status(401).json({ error: 'Invalid Google token' });
+      return res.status(401).json({ error: 'Your session has expired. Please sign in again.' });
     }
   } catch (error) {
     res.status(500).json({ error: error.message });
