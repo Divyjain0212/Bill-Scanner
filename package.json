@@ -1,0 +1,14 @@
+{
+  "name": "bill-scanner-root",
+  "version": "1.0.0",
+  "description": "Root package for running client and server together",
+  "scripts": {
+    "start": "concurrently \"npm run start:client\" \"npm run start:server\"",
+    "start:client": "cd client && npm run dev",
+    "start:server": "cd server && npm start",
+    "install:all": "npm install && cd client && npm install && cd ../server && npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

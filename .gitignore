@@ -1,0 +1,16 @@
+# Node Modules
+node_modules/
+client/node_modules/
+server/node_modules/
+
+# Environment Variables & Secrets
+.env
+credentials.json
+token.json
+
+# Build Outputs
+client/dist/
+
+# OS Files
+.DS_Store
+Thumbs.db
