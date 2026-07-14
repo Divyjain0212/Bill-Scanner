@@ -81,6 +81,24 @@ const BillTable = ({ bills, loading, onDelete, onUpdate }) => {
     }
   };
 
+  const handleDeleteSingle = async (e, fileId) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!window.confirm('Are you sure you want to delete this specific bill?')) return;
+    
+    setIsDeleting(fileId);
+    try {
+      await api.deleteBill(fileId);
+      onDelete(fileId);
+    } catch (error) {
+      console.error('Failed to delete single bill:', error);
+      alert('Failed to delete bill');
+    } finally {
+      setIsDeleting(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-12 text-center text-slate-500 flex flex-col items-center justify-center">
@@ -149,21 +167,30 @@ const BillTable = ({ bills, loading, onDelete, onUpdate }) => {
                   <span className="text-[10px] font-bold tracking-wider text-slate-400 uppercase ml-1">Attached Bills ({group.files.length})</span>
                   <div className="flex flex-col gap-2">
                     {group.files.map((file, idx) => (
-                      <a 
-                        key={file.id}
-                        href={file.webViewLink} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-3 p-3 bg-slate-50 hover:bg-blue-50 border border-slate-100 rounded-xl transition-colors group/link"
-                      >
-                        <div className="p-1.5 bg-white shadow-sm rounded-md text-slate-400 group-hover/link:text-blue-500">
-                          <FileText size={16} />
-                        </div>
-                        <span className="text-sm font-medium text-slate-700 group-hover/link:text-blue-700 flex-1 truncate">
-                          Bill {idx + 1}
-                        </span>
-                        <ExternalLink size={14} className="text-slate-300 group-hover/link:text-blue-400" />
-                      </a>
+                      <div key={file.id} className="flex items-center gap-1 p-2 bg-slate-50 hover:bg-blue-50 border border-slate-100 rounded-xl transition-colors group/link">
+                        <a 
+                          href={file.webViewLink} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-3 flex-1 overflow-hidden pl-1"
+                        >
+                          <div className="p-1.5 bg-white shadow-sm rounded-md text-slate-400 group-hover/link:text-blue-500">
+                            <FileText size={16} />
+                          </div>
+                          <span className="text-sm font-medium text-slate-700 group-hover/link:text-blue-700 flex-1 truncate">
+                            Bill {idx + 1}
+                          </span>
+                          <ExternalLink size={14} className="text-slate-300 group-hover/link:text-blue-400 mr-1" />
+                        </a>
+                        <button
+                          onClick={(e) => handleDeleteSingle(e, file.id)}
+                          disabled={isDeleting === file.id}
+                          className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors shrink-0 disabled:opacity-50"
+                          title="Delete this specific bill"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -239,17 +266,29 @@ const BillTable = ({ bills, loading, onDelete, onUpdate }) => {
                     <td className="px-6 py-4">
                       <div className="flex flex-wrap gap-2">
                         {group.files.map((file, idx) => (
-                          <a 
+                          <div 
                             key={file.id}
-                            href={file.webViewLink} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 hover:border-blue-300 hover:bg-blue-50 rounded-lg transition-colors text-slate-700 hover:text-blue-700 shadow-sm"
-                            title={file.name}
+                            className="group/file inline-flex items-center gap-1 px-1.5 py-1.5 bg-white border border-slate-200 hover:border-blue-300 hover:bg-blue-50 rounded-lg transition-colors shadow-sm"
                           >
-                            <FileText size={14} className="text-slate-400" />
-                            Bill {idx + 1}
-                          </a>
+                            <a 
+                              href={file.webViewLink} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 text-slate-700 hover:text-blue-700 pl-1.5"
+                              title={file.name}
+                            >
+                              <FileText size={14} className="text-slate-400" />
+                              <span className="mr-0.5">Bill {idx + 1}</span>
+                            </a>
+                            <button
+                              onClick={(e) => handleDeleteSingle(e, file.id)}
+                              disabled={isDeleting === file.id}
+                              className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-all opacity-0 group-hover/file:opacity-100 disabled:opacity-50"
+                              title="Delete this bill"
+                            >
+                              <X size={14} />
+                            </button>
+                          </div>
                         ))}
                       </div>
                     </td>
