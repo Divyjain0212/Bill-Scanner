@@ -45,8 +45,8 @@ const UploadModal = ({ bills = [], onClose, onUploadSuccess }) => {
     if (file.type.startsWith('image/')) {
       try {
         const options = {
-          maxSizeMB: 1, // Compress to max 1MB
-          maxWidthOrHeight: 1920,
+          maxSizeMB: 3.5, // High quality, but kept safely under Vercel's 4.5MB limit
+          maxWidthOrHeight: 4096, // Extremely high resolution
           useWebWorker: true
         };
         const compressedFile = await imageCompression(file, options);
