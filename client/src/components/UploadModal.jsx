@@ -139,7 +139,7 @@ const UploadModal = ({ bills = [], onClose, onUploadSuccess }) => {
               className="w-full rounded-xl border-slate-200 bg-white border py-2.5 px-4 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
               placeholder="Enter name"
             />
-            {showSuggestions && uniqueNames.filter(n => n.toLowerCase().includes(formData.personName.toLowerCase())).length > 0 && (
+            {showSuggestions && formData.personName.trim().length > 0 && uniqueNames.filter(n => n.toLowerCase().includes(formData.personName.toLowerCase()) && n.toLowerCase() !== formData.personName.toLowerCase()).length > 0 && (
               <ul className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-48 overflow-auto py-1">
                 {uniqueNames
                   .filter(n => n.toLowerCase().includes(formData.personName.toLowerCase()))

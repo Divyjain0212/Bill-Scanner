@@ -161,7 +161,7 @@ const Dashboard = () => {
               placeholder="e.g. John Doe"
               className="pl-10 w-full rounded-xl border-slate-200 bg-slate-50 border py-2.5 px-4 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
             />
-            {showSuggestions && uniqueNames.filter(n => n.toLowerCase().includes(filters.personName.toLowerCase())).length > 0 && (
+            {showSuggestions && filters.personName.trim().length > 0 && uniqueNames.filter(n => n.toLowerCase().includes(filters.personName.toLowerCase()) && n.toLowerCase() !== filters.personName.toLowerCase()).length > 0 && (
               <ul className="absolute z-20 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-48 overflow-auto py-1">
                 {uniqueNames
                   .filter(n => n.toLowerCase().includes(filters.personName.toLowerCase()))
