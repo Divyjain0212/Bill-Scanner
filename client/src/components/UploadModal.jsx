@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, UploadCloud, Loader2, FileText } from 'lucide-react';
+import imageCompression from 'browser-image-compression';
 import * as api from '../api';
 
 const UploadModal = ({ bills = [], onClose, onUploadSuccess }) => {
@@ -35,8 +36,28 @@ const UploadModal = ({ bills = [], onClose, onUploadSuccess }) => {
     setLoading(true);
     setError(null);
     
+    setLoading(true);
+    setError(null);
+    
+    let fileToUpload = file;
+    
+    // Compress image if it's an image to prevent Vercel 4.5MB limits
+    if (file.type.startsWith('image/')) {
+      try {
+        const options = {
+          maxSizeMB: 1, // Compress to max 1MB
+          maxWidthOrHeight: 1920,
+          useWebWorker: true
+        };
+        const compressedFile = await imageCompression(file, options);
+        fileToUpload = new File([compressedFile], file.name, { type: compressedFile.type });
+      } catch (err) {
+        console.error('Error compressing image:', err);
+      }
+    }
+    
     const data = new FormData();
-    data.append('file', file);
+    data.append('file', fileToUpload);
     data.append('personName', formData.personName);
     data.append('totalAmount', formData.totalAmount);
     data.append('billDate', formData.billDate);
@@ -45,23 +66,27 @@ const UploadModal = ({ bills = [], onClose, onUploadSuccess }) => {
       await api.uploadBill(data);
       onUploadSuccess();
     } catch (err) {
-      setError(err.response?.data?.error || err.message);
+      if (err.response?.status === 413) {
+        setError("File is too large! Please upload a smaller photo.");
+      } else {
+        setError(err.response?.data?.error || err.message || "Upload failed. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm fade-in">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden flex flex-col">
-        <div className="flex justify-between items-center p-5 border-b border-slate-100">
+    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4 bg-slate-900/50 backdrop-blur-sm fade-in">
+      <div className="bg-white rounded-t-3xl md:rounded-2xl shadow-xl w-full max-w-md max-h-[95vh] flex flex-col mt-10 md:mt-0 relative">
+        <div className="flex justify-between items-center p-5 border-b border-slate-100 shrink-0">
           <h2 className="text-xl font-semibold text-slate-800">Upload New Bill</h2>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors">
             <X size={20} />
           </button>
         </div>
         
-        <form onSubmit={handleSubmit} className="p-5 flex flex-col gap-4">
+        <form onSubmit={handleSubmit} className="p-5 flex flex-col gap-4 overflow-y-auto pb-8 md:pb-5">
           {error && (
             <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100">
               {error}
