@@ -60,8 +60,7 @@ const UploadModal = ({ bills = [], onClose, onUploadSuccess }) => {
     setError(null);
     
     try {
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
+      const uploadPromises = files.map(async (file) => {
         let fileToUpload = file;
         
         if (file.type.startsWith('image/')) {
@@ -84,8 +83,10 @@ const UploadModal = ({ bills = [], onClose, onUploadSuccess }) => {
         data.append('personName', formData.personName);
         data.append('billDate', formData.billDate);
         
-        await api.uploadBill(data);
-      }
+        return api.uploadBill(data);
+      });
+      
+      await Promise.all(uploadPromises);
       onUploadSuccess();
     } catch (err) {
       if (err.response?.status === 413) {
