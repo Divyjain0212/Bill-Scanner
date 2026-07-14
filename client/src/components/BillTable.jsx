@@ -278,6 +278,7 @@ const BillTable = ({ bills, loading, onDelete, onUpdate }) => {
         </tbody>
       </table>
     </div>
+    </div>
   );
 };
 
