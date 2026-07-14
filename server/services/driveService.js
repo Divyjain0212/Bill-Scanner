@@ -60,6 +60,24 @@ const getAuthUrl = () => {
   });
 };
 
+const getClientId = () => {
+  let credentials;
+  if (process.env.GOOGLE_CREDENTIALS) {
+    try {
+      credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
+    } catch (e) {
+      throw new Error('Invalid JSON in GOOGLE_CREDENTIALS env var.');
+    }
+  } else if (fs.existsSync(CREDENTIALS_PATH)) {
+    const content = fs.readFileSync(CREDENTIALS_PATH);
+    credentials = JSON.parse(content);
+  } else {
+    throw new Error('Credentials not found.');
+  }
+  const { client_id } = credentials.installed || credentials.web;
+  return client_id;
+};
+
 const setCode = async (code) => {
   const { tokens } = await oAuth2Client.getToken(code);
   oAuth2Client.setCredentials(tokens);
@@ -204,6 +222,7 @@ const deleteFile = async (fileId) => {
 module.exports = {
   initAuth,
   getAuthUrl,
+  getClientId,
   setCode,
   uploadFile,
   getFiles,

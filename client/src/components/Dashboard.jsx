@@ -5,7 +5,7 @@ import * as api from '../api';
 import UploadModal from './UploadModal';
 import BillTable from './BillTable';
 
-const Dashboard = () => {
+const Dashboard = ({ onLogout }) => {
   const [allBills, setAllBills] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
@@ -159,6 +159,12 @@ const Dashboard = () => {
           <p className="mt-2 text-sm text-slate-500">Manage and store your bills securely in Google Drive.</p>
         </div>
         <div className="mt-4 md:mt-0 flex gap-3">
+          <button 
+            onClick={onLogout}
+            className="inline-flex items-center justify-center px-4 py-2.5 bg-slate-100 text-slate-600 rounded-xl font-medium hover:bg-slate-200 transition-colors"
+          >
+            Sign Out
+          </button>
           <button 
             onClick={() => setIsUploadOpen(true)}
             className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl font-medium shadow-lg shadow-blue-500/30 hover:bg-blue-700 hover:shadow-blue-600/40 transition-all hover-lift"
