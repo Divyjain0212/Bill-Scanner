@@ -75,8 +75,74 @@ const BillTable = ({ bills, loading, onDelete, onUpdate }) => {
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-left text-sm text-slate-600">
+    <div>
+      {/* Mobile Card View */}
+      <div className="md:hidden flex flex-col gap-4">
+        {bills.map((bill) => {
+          const isEditing = editingId === bill.id;
+          return (
+            <div key={bill.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex flex-col gap-4">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-3 overflow-hidden">
+                  <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl shrink-0">
+                    <FileText size={20} />
+                  </div>
+                  <a 
+                    href={bill.webViewLink} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="font-semibold text-slate-800 hover:text-blue-600 line-clamp-2"
+                  >
+                    {bill.name}
+                  </a>
+                </div>
+                {!isEditing && (
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button onClick={() => startEditing(bill)} className="p-2 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg">
+                      <Edit2 size={18} />
+                    </button>
+                    <button onClick={() => handleDelete(bill.id)} disabled={isDeleting === bill.id} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg disabled:opacity-50">
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {isEditing ? (
+                <div className="flex flex-col gap-3 bg-slate-50 p-3.5 rounded-xl border border-blue-100">
+                  <input type="file" onChange={(e) => setEditForm({...editForm, file: e.target.files[0]})} className="text-xs w-full text-slate-600 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:bg-blue-50 file:text-blue-600"/>
+                  <input type="text" placeholder="Person Name" value={editForm.personName} onChange={e => setEditForm({...editForm, personName: e.target.value})} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 outline-none"/>
+                  <input type="number" placeholder="Amount" value={editForm.totalAmount} onChange={e => setEditForm({...editForm, totalAmount: e.target.value})} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 outline-none"/>
+                  <input type="date" value={editForm.billDate} onChange={e => setEditForm({...editForm, billDate: e.target.value})} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 outline-none"/>
+                  <div className="flex gap-2 mt-1">
+                    <button onClick={() => handleSave(bill.id)} className="flex-1 py-2 bg-green-500 hover:bg-green-600 transition-colors text-white rounded-lg font-medium text-sm flex justify-center items-center gap-1"><Check size={16}/> Save</button>
+                    <button onClick={() => setEditingId(null)} className="flex-1 py-2 bg-slate-200 hover:bg-slate-300 transition-colors text-slate-700 rounded-lg font-medium text-sm flex justify-center items-center gap-1"><X size={16}/> Cancel</button>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-3 bg-slate-50/50 p-3.5 rounded-xl border border-slate-100">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Person Name</span>
+                    <span className="text-sm font-medium text-slate-700 flex items-center gap-1.5"><User size={14} className="text-slate-400"/> {bill.appProperties?.personName || '-'}</span>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Date</span>
+                    <span className="text-sm font-medium text-slate-700 flex items-center gap-1.5"><Calendar size={14} className="text-slate-400"/> {bill.appProperties?.billDate || '-'}</span>
+                  </div>
+                  <div className="col-span-2 pt-3 border-t border-slate-100 flex flex-col gap-1">
+                    <span className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Total Amount</span>
+                    <span className="text-lg font-bold text-slate-800 flex items-center"><IndianRupee size={16} className="text-slate-500 mr-1"/> {bill.appProperties?.totalAmount || '0.00'}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Desktop Table View */}
+      <div className="hidden md:block overflow-x-auto">
+        <table className="w-full text-left text-sm text-slate-600">
         <thead className="text-xs uppercase bg-slate-50 text-slate-500 border-b border-slate-100">
           <tr>
             <th className="px-6 py-4 font-medium">Document Name</th>
