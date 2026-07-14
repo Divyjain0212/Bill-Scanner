@@ -10,6 +10,8 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(false);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [filters, setFilters] = useState({ personName: '', startDate: '', endDate: '' });
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const uniqueNames = [...new Set(bills.map(b => b.appProperties?.personName).filter(Boolean))];
   
   // Auth state
   const [authUrl, setAuthUrl] = useState(null);
@@ -150,10 +152,34 @@ const Dashboard = () => {
               type="text" 
               name="personName"
               value={filters.personName}
-              onChange={handleFilterChange}
+              onChange={(e) => {
+                handleFilterChange(e);
+                setShowSuggestions(true);
+              }}
+              onFocus={() => setShowSuggestions(true)}
+              onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
               placeholder="e.g. John Doe"
               className="pl-10 w-full rounded-xl border-slate-200 bg-slate-50 border py-2.5 px-4 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
             />
+            {showSuggestions && uniqueNames.filter(n => n.toLowerCase().includes(filters.personName.toLowerCase())).length > 0 && (
+              <ul className="absolute z-20 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-48 overflow-auto py-1">
+                {uniqueNames
+                  .filter(n => n.toLowerCase().includes(filters.personName.toLowerCase()))
+                  .map(name => (
+                    <li 
+                      key={name}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        setFilters(prev => ({ ...prev, personName: name }));
+                        setShowSuggestions(false);
+                      }}
+                      className="px-4 py-2.5 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700 cursor-pointer transition-colors"
+                    >
+                      {name}
+                    </li>
+                  ))}
+              </ul>
+            )}
           </div>
         </div>
         <div className="flex-1 w-full">
