@@ -1,74 +1,95 @@
 import React, { useState, useEffect } from 'react';
-import { X, UploadCloud, Loader2, FileText } from 'lucide-react';
+import { X, UploadCloud, Loader2, FileText, Trash2 } from 'lucide-react';
 import imageCompression from 'browser-image-compression';
 import * as api from '../api';
 
 const UploadModal = ({ bills = [], onClose, onUploadSuccess }) => {
   const uniqueNames = [...new Set(bills.map(b => b.appProperties?.personName).filter(Boolean))];
-  const [file, setFile] = useState(null);
+  const [files, setFiles] = useState([]);
   const [formData, setFormData] = useState({
     personName: '',
-    totalAmount: '',
     billDate: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState(null);
+  const [previewUrls, setPreviewUrls] = useState([]);
 
   useEffect(() => {
-    if (!file) {
-      setPreviewUrl(null);
-      return;
+    const urls = files.map(file => URL.createObjectURL(file));
+    setPreviewUrls(urls);
+    return () => urls.forEach(url => URL.revokeObjectURL(url));
+  }, [files]);
+
+  const removeFile = (index) => {
+    setFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleFileChange = (e) => {
+    const selected = Array.from(e.target.files);
+    const valid = [];
+    let hasInvalid = false;
+    selected.forEach(file => {
+      if (file.type.startsWith('image/') || file.type === 'application/pdf') {
+        valid.push(file);
+      } else {
+        hasInvalid = true;
+      }
+    });
+    
+    if (hasInvalid) {
+      setError('Some files were ignored. Only images (JPG, PNG) and PDFs are accepted.');
+    } else {
+      setError(null);
     }
-    const url = URL.createObjectURL(file);
-    setPreviewUrl(url);
-    return () => URL.revokeObjectURL(url);
-  }, [file]);
+    
+    if (valid.length > 0) {
+      setFiles(prev => [...prev, ...valid]);
+    }
+    e.target.value = '';
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!file) {
-      setError('Please select a file');
+    if (files.length === 0) {
+      setError('Please select at least one file');
       return;
     }
     
     setLoading(true);
     setError(null);
     
-    setLoading(true);
-    setError(null);
-    
-    let fileToUpload = file;
-    
-    // Compress image if it's an image to prevent Vercel 4.5MB limits
-    if (file.type.startsWith('image/')) {
-      try {
-        const options = {
-          maxSizeMB: 1, // Keep under 1MB as requested
-          maxWidthOrHeight: 2560, // QHD resolution, keeps text very crisp
-          initialQuality: 0.9, // Start with high quality before compressing
-          useWebWorker: true
-        };
-        const compressedFile = await imageCompression(file, options);
-        fileToUpload = new File([compressedFile], file.name, { type: compressedFile.type });
-      } catch (err) {
-        console.error('Error compressing image:', err);
-      }
-    }
-    
-    const data = new FormData();
-    data.append('file', fileToUpload);
-    data.append('personName', formData.personName);
-    data.append('totalAmount', formData.totalAmount);
-    data.append('billDate', formData.billDate);
-
     try {
-      await api.uploadBill(data);
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        let fileToUpload = file;
+        
+        if (file.type.startsWith('image/')) {
+          try {
+            const options = {
+              maxSizeMB: 1,
+              maxWidthOrHeight: 2560,
+              initialQuality: 0.9,
+              useWebWorker: true
+            };
+            const compressedFile = await imageCompression(file, options);
+            fileToUpload = new File([compressedFile], file.name, { type: compressedFile.type });
+          } catch (err) {
+            console.error('Error compressing image:', err);
+          }
+        }
+        
+        const data = new FormData();
+        data.append('file', fileToUpload);
+        data.append('personName', formData.personName);
+        data.append('billDate', formData.billDate);
+        
+        await api.uploadBill(data);
+      }
       onUploadSuccess();
     } catch (err) {
       if (err.response?.status === 413) {
-        setError("File is too large! Please upload a smaller photo.");
+        setError("One of the files is too large! Please upload smaller photos.");
       } else {
         setError(err.response?.data?.error || err.message || "Upload failed. Please try again.");
       }
@@ -94,61 +115,45 @@ const UploadModal = ({ bills = [], onClose, onUploadSuccess }) => {
             </div>
           )}
           
-          <div className="border-2 border-dashed border-slate-200 rounded-xl p-4 text-center bg-slate-50 relative hover:bg-slate-100 transition-colors overflow-hidden min-h-[160px] flex items-center justify-center">
-            {!file && (
-              <input 
-                type="file" 
-                accept="image/*,application/pdf"
-                onChange={(e) => {
-                  const selected = e.target.files[0];
-                  if (selected && (selected.type.startsWith('image/') || selected.type === 'application/pdf')) {
-                    setFile(selected);
-                    setError(null);
-                  } else if (selected) {
-                    setError('Only image files (JPG, PNG) and PDFs are accepted.');
-                    e.target.value = ''; // reset input
-                  }
-                }}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                required
-              />
-            )}
-            
-            {file ? (
-              <div className="flex flex-col items-center gap-3 w-full z-20 relative">
-                {file.type.startsWith('image/') ? (
-                  <img src={previewUrl} alt="Preview" className="h-32 object-contain rounded-lg shadow-sm border border-slate-200" />
-                ) : file.type === 'application/pdf' ? (
-                  <div className="h-32 w-full max-w-[200px] rounded-lg shadow-sm border border-slate-200 overflow-hidden bg-white">
-                    <object data={previewUrl} type="application/pdf" className="w-full h-full">
-                      <div className="flex flex-col items-center justify-center h-full bg-slate-100 text-slate-500 p-2">
-                        <FileText size={24} className="mb-1" />
-                        <span className="text-xs font-medium">PDF Document</span>
-                      </div>
-                    </object>
-                  </div>
-                ) : null}
-                <div className="text-sm font-medium text-slate-700 truncate max-w-[250px] px-2">
-                  {file.name}
-                </div>
-                <button 
-                  type="button" 
-                  onClick={() => setFile(null)} 
-                  className="text-xs text-red-600 hover:text-red-700 font-semibold bg-red-50 hover:bg-red-100 transition-colors px-3 py-1.5 rounded-lg"
-                >
-                  Remove & Select Different File
-                </button>
+          <div className="border-2 border-dashed border-slate-200 rounded-xl p-4 text-center bg-slate-50 relative hover:bg-slate-100 transition-colors overflow-hidden min-h-[120px] flex items-center justify-center">
+            <input 
+              type="file" 
+              multiple
+              accept="image/*,application/pdf"
+              onChange={handleFileChange}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+              required={files.length === 0}
+            />
+            <div className="flex flex-col items-center gap-2 pointer-events-none py-2">
+              <UploadCloud size={32} className="text-blue-500" />
+              <div className="text-sm font-medium text-slate-700">
+                Drag & drop or click to add files
               </div>
-            ) : (
-              <div className="flex flex-col items-center gap-2 pointer-events-none py-4">
-                <UploadCloud size={32} className="text-blue-500" />
-                <div className="text-sm font-medium text-slate-700">
-                  Drag & drop or click to upload
-                </div>
-                <div className="text-xs text-slate-400">PDF, JPG, PNG up to 10MB</div>
-              </div>
-            )}
+              <div className="text-xs text-slate-400">PDF, JPG, PNG</div>
+            </div>
           </div>
+          
+          {files.length > 0 && (
+            <div className="flex flex-col gap-2 max-h-40 overflow-y-auto pr-1">
+              {files.map((file, idx) => (
+                <div key={idx} className="flex items-center justify-between bg-slate-50 border border-slate-100 rounded-lg p-2">
+                  <div className="flex items-center gap-3 overflow-hidden">
+                    {file.type.startsWith('image/') ? (
+                      <img src={previewUrls[idx]} alt="Preview" className="h-10 w-10 object-cover rounded shadow-sm border border-slate-200 shrink-0" />
+                    ) : (
+                      <div className="h-10 w-10 bg-white rounded shadow-sm border border-slate-200 flex items-center justify-center shrink-0 text-slate-400">
+                        <FileText size={20} />
+                      </div>
+                    )}
+                    <span className="text-xs font-medium text-slate-700 truncate">{file.name}</span>
+                  </div>
+                  <button type="button" onClick={() => removeFile(idx)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors">
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
 
           <div className="relative">
             <label className="block text-sm font-medium text-slate-700 mb-1">Person Name</label>
@@ -173,7 +178,7 @@ const UploadModal = ({ bills = [], onClose, onUploadSuccess }) => {
                     <li 
                       key={name}
                       onMouseDown={(e) => {
-                        e.preventDefault(); // Prevent input blur
+                        e.preventDefault(); 
                         setFormData({...formData, personName: name});
                         setShowSuggestions(false);
                       }}
@@ -184,19 +189,6 @@ const UploadModal = ({ bills = [], onClose, onUploadSuccess }) => {
                   ))}
               </ul>
             )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Total Amount</label>
-            <input 
-              type="number" 
-              step="0.01"
-              required
-              value={formData.totalAmount}
-              onChange={(e) => setFormData({...formData, totalAmount: e.target.value})}
-              className="w-full rounded-xl border-slate-200 bg-white border py-2.5 px-4 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
-              placeholder="0.00"
-            />
           </div>
 
           <div>
@@ -220,10 +212,10 @@ const UploadModal = ({ bills = [], onClose, onUploadSuccess }) => {
             </button>
             <button 
               type="submit" 
-              disabled={loading}
+              disabled={loading || files.length === 0}
               className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-xl font-medium shadow-lg shadow-blue-500/30 hover:bg-blue-700 transition-all flex items-center justify-center disabled:opacity-70 disabled:cursor-not-allowed hover-lift"
             >
-              {loading ? <Loader2 size={18} className="animate-spin" /> : 'Upload Bill'}
+              {loading ? <Loader2 size={18} className="animate-spin" /> : `Upload ${files.length > 0 ? files.length + ' File' + (files.length > 1 ? 's' : '') : ''}`}
             </button>
           </div>
         </form>

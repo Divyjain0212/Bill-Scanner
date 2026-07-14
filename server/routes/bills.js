@@ -15,11 +15,10 @@ router.post('/upload', upload.single('file'), async (req, res) => {
       return res.status(400).json({ error: 'No file uploaded' });
     }
     
-    const { personName, totalAmount, billDate } = req.body;
+    const { personName, billDate } = req.body;
     
     const result = await driveService.uploadFile(req.file, {
       personName,
-      totalAmount,
       billDate
     });
 
@@ -71,11 +70,10 @@ router.get('/', async (req, res) => {
 router.put('/:id', upload.single('file'), async (req, res) => {
   try {
     const { id } = req.params;
-    const { personName, totalAmount, billDate } = req.body;
+    const { personName, billDate } = req.body;
     
     const result = await driveService.updateFile(id, {
       personName,
-      totalAmount,
       billDate
     }, req.file);
     
