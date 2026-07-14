@@ -12,6 +12,7 @@ const UploadModal = ({ bills = [], onClose, onUploadSuccess }) => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -72,22 +73,40 @@ const UploadModal = ({ bills = [], onClose, onUploadSuccess }) => {
             </div>
           </div>
 
-          <div>
+          <div className="relative">
             <label className="block text-sm font-medium text-slate-700 mb-1">Person Name</label>
             <input 
               type="text" 
               required
-              list="person-names"
               value={formData.personName}
-              onChange={(e) => setFormData({...formData, personName: e.target.value})}
+              onChange={(e) => {
+                setFormData({...formData, personName: e.target.value});
+                setShowSuggestions(true);
+              }}
+              onFocus={() => setShowSuggestions(true)}
+              onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
               className="w-full rounded-xl border-slate-200 bg-white border py-2.5 px-4 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
               placeholder="Enter name"
             />
-            <datalist id="person-names">
-              {uniqueNames.map(name => (
-                <option key={name} value={name} />
-              ))}
-            </datalist>
+            {showSuggestions && uniqueNames.filter(n => n.toLowerCase().includes(formData.personName.toLowerCase())).length > 0 && (
+              <ul className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-48 overflow-auto py-1">
+                {uniqueNames
+                  .filter(n => n.toLowerCase().includes(formData.personName.toLowerCase()))
+                  .map(name => (
+                    <li 
+                      key={name}
+                      onMouseDown={(e) => {
+                        e.preventDefault(); // Prevent input blur
+                        setFormData({...formData, personName: name});
+                        setShowSuggestions(false);
+                      }}
+                      className="px-4 py-2.5 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700 cursor-pointer transition-colors"
+                    >
+                      {name}
+                    </li>
+                  ))}
+              </ul>
+            )}
           </div>
 
           <div>
