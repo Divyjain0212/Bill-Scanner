@@ -2,6 +2,15 @@ import React, { useState } from 'react';
 import { ExternalLink, Edit2, Trash2, FileText, Calendar, IndianRupee, User, Check, X } from 'lucide-react';
 import * as api from '../api';
 
+const formatDate = (dateString) => {
+  if (!dateString) return '-';
+  const parts = dateString.split('-');
+  if (parts.length === 3) {
+    return `${parts[2]}-${parts[1]}-${parts[0]}`;
+  }
+  return dateString;
+};
+
 const BillTable = ({ bills, loading, onDelete, onUpdate }) => {
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
@@ -127,7 +136,7 @@ const BillTable = ({ bills, loading, onDelete, onUpdate }) => {
                   </div>
                   <div className="flex flex-col gap-1">
                     <span className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Date</span>
-                    <span className="text-sm font-medium text-slate-700 flex items-center gap-1.5"><Calendar size={14} className="text-slate-400"/> {bill.appProperties?.billDate || '-'}</span>
+                    <span className="text-sm font-medium text-slate-700 flex items-center gap-1.5"><Calendar size={14} className="text-slate-400"/> {formatDate(bill.appProperties?.billDate)}</span>
                   </div>
                   <div className="col-span-2 pt-3 border-t border-slate-100 flex flex-col gap-1">
                     <span className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Total Amount</span>
@@ -239,7 +248,7 @@ const BillTable = ({ bills, loading, onDelete, onUpdate }) => {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         <Calendar size={14} className="text-slate-400" />
-                        {bill.appProperties?.billDate || '-'}
+                        {formatDate(bill.appProperties?.billDate)}
                       </div>
                     </td>
                     <td className="px-6 py-4 text-right">
