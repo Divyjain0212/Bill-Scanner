@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, UploadCloud, Loader2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, UploadCloud, Loader2, FileText } from 'lucide-react';
 import * as api from '../api';
 
 const UploadModal = ({ bills = [], onClose, onUploadSuccess }) => {
@@ -13,6 +13,17 @@ const UploadModal = ({ bills = [], onClose, onUploadSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState(null);
+
+  useEffect(() => {
+    if (!file) {
+      setPreviewUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -57,20 +68,60 @@ const UploadModal = ({ bills = [], onClose, onUploadSuccess }) => {
             </div>
           )}
           
-          <div className="border-2 border-dashed border-slate-200 rounded-xl p-8 text-center bg-slate-50 relative hover:bg-slate-100 transition-colors">
-            <input 
-              type="file" 
-              onChange={(e) => setFile(e.target.files[0])}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-              required
-            />
-            <div className="flex flex-col items-center gap-2 pointer-events-none">
-              <UploadCloud size={32} className="text-blue-500" />
-              <div className="text-sm font-medium text-slate-700">
-                {file ? file.name : "Drag & drop or click to upload"}
+          <div className="border-2 border-dashed border-slate-200 rounded-xl p-4 text-center bg-slate-50 relative hover:bg-slate-100 transition-colors overflow-hidden min-h-[160px] flex items-center justify-center">
+            {!file && (
+              <input 
+                type="file" 
+                accept="image/*,application/pdf"
+                onChange={(e) => {
+                  const selected = e.target.files[0];
+                  if (selected && (selected.type.startsWith('image/') || selected.type === 'application/pdf')) {
+                    setFile(selected);
+                    setError(null);
+                  } else if (selected) {
+                    setError('Only image files (JPG, PNG) and PDFs are accepted.');
+                    e.target.value = ''; // reset input
+                  }
+                }}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                required
+              />
+            )}
+            
+            {file ? (
+              <div className="flex flex-col items-center gap-3 w-full z-20 relative">
+                {file.type.startsWith('image/') ? (
+                  <img src={previewUrl} alt="Preview" className="h-32 object-contain rounded-lg shadow-sm border border-slate-200" />
+                ) : file.type === 'application/pdf' ? (
+                  <div className="h-32 w-full max-w-[200px] rounded-lg shadow-sm border border-slate-200 overflow-hidden bg-white">
+                    <object data={previewUrl} type="application/pdf" className="w-full h-full">
+                      <div className="flex flex-col items-center justify-center h-full bg-slate-100 text-slate-500 p-2">
+                        <FileText size={24} className="mb-1" />
+                        <span className="text-xs font-medium">PDF Document</span>
+                      </div>
+                    </object>
+                  </div>
+                ) : null}
+                <div className="text-sm font-medium text-slate-700 truncate max-w-[250px] px-2">
+                  {file.name}
+                </div>
+                <button 
+                  type="button" 
+                  onClick={() => setFile(null)} 
+                  className="text-xs text-red-600 hover:text-red-700 font-semibold bg-red-50 hover:bg-red-100 transition-colors px-3 py-1.5 rounded-lg"
+                >
+                  Remove & Select Different File
+                </button>
               </div>
-              <div className="text-xs text-slate-400">PDF, JPG, PNG up to 10MB</div>
-            </div>
+            ) : (
+              <div className="flex flex-col items-center gap-2 pointer-events-none py-4">
+                <UploadCloud size={32} className="text-blue-500" />
+                <div className="text-sm font-medium text-slate-700">
+                  Drag & drop or click to upload
+                </div>
+                <div className="text-xs text-slate-400">PDF, JPG, PNG up to 10MB</div>
+              </div>
+            )}
           </div>
 
           <div className="relative">
