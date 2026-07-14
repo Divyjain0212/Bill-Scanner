@@ -6,14 +6,30 @@ import UploadModal from './UploadModal';
 import BillTable from './BillTable';
 
 const Dashboard = () => {
-  const [bills, setBills] = useState([]);
+  const [allBills, setAllBills] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [filters, setFilters] = useState({ personName: '', startDate: '', endDate: '' });
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [hasSearched, setHasSearched] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
-  const uniqueNames = [...new Set(bills.map(b => b.appProperties?.personName).filter(Boolean))];
+  
+  const uniqueNames = [...new Set(allBills.map(b => b.appProperties?.personName).filter(Boolean))];
+  
+  const hasActiveFilters = filters.personName.trim() !== '' || filters.startDate !== '' || filters.endDate !== '';
+  
+  const filteredBills = allBills.filter(bill => {
+    let match = true;
+    if (filters.personName && !bill.appProperties?.personName?.toLowerCase().includes(filters.personName.toLowerCase())) {
+      match = false;
+    }
+    if (filters.startDate && bill.appProperties?.billDate < filters.startDate) {
+      match = false;
+    }
+    if (filters.endDate && bill.appProperties?.billDate > filters.endDate) {
+      match = false;
+    }
+    return match;
+  });
   
   // Auth state
   const [authUrl, setAuthUrl] = useState(null);
@@ -30,12 +46,10 @@ const Dashboard = () => {
         return;
       }
       
-      // If authenticated, fetch bills
+      // If authenticated, fetch all bills for client-side filtering
       setAuthUrl(null);
-      const activeFilters = Object.fromEntries(Object.entries(filters).filter(([_, v]) => v.trim() !== ''));
-      setHasSearched(Object.keys(activeFilters).length > 0);
-      const data = await api.getBills(activeFilters);
-      setBills(data || []);
+      const data = await api.getBills({});
+      setAllBills(data || []);
     } catch (error) {
       console.error('Error in auth or fetch:', error);
       if (error.response?.data?.error) {
@@ -56,11 +70,11 @@ const Dashboard = () => {
   };
 
   const handleBillDeleted = (id) => {
-    setBills(prev => prev.filter(b => b.id !== id));
+    setAllBills(prev => prev.filter(b => b.id !== id));
   };
 
   const handleBillUpdated = (updatedBill) => {
-    setBills(prev => prev.map(b => b.id === updatedBill.id ? { ...b, appProperties: updatedBill.appProperties } : b));
+    setAllBills(prev => prev.map(b => b.id === updatedBill.id ? { ...b, appProperties: updatedBill.appProperties } : b));
   };
 
   if (authError && authError.includes('credentials.json not found')) {
@@ -228,9 +242,9 @@ const Dashboard = () => {
 
       {/* Table Section */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-        {hasSearched ? (
+        {hasActiveFilters ? (
           <BillTable 
-            bills={bills} 
+            bills={filteredBills} 
             loading={loading} 
             onDelete={handleBillDeleted}
             onUpdate={handleBillUpdated}
@@ -249,7 +263,7 @@ const Dashboard = () => {
       {/* Modals */}
       {isUploadOpen && (
         <UploadModal 
-          bills={bills}
+          bills={allBills}
           onClose={() => setIsUploadOpen(false)} 
           onUploadSuccess={() => {
             setIsUploadOpen(false);
