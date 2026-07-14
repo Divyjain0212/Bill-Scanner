@@ -25,9 +25,17 @@ function App() {
   const [token, setToken] = useState(localStorage.getItem('bill_scanner_token'));
   const [clientId, setClientId] = useState(null);
   const [error, setError] = useState('');
+  const [googleLoaded, setGoogleLoaded] = useState(false);
   const buttonRef = useRef(null);
 
   useEffect(() => {
+    // Check for Google script
+    const checkGoogle = setInterval(() => {
+      if (window.google) {
+        setGoogleLoaded(true);
+        clearInterval(checkGoogle);
+      }
+    }, 100);
     // Fetch client ID from backend
     axios.get('/api/auth/client-id')
       .then(res => setClientId(res.data.clientId))
@@ -39,11 +47,14 @@ function App() {
       setToken(null);
     };
     window.addEventListener('auth-error', handleAuthError);
-    return () => window.removeEventListener('auth-error', handleAuthError);
+    return () => {
+      window.removeEventListener('auth-error', handleAuthError);
+      clearInterval(checkGoogle);
+    };
   }, []);
 
   useEffect(() => {
-    if (!token && clientId && window.google) {
+    if (!token && clientId && googleLoaded && window.google) {
       window.google.accounts.id.initialize({
         client_id: clientId,
         callback: (response) => {
@@ -61,7 +72,7 @@ function App() {
         );
       }
     }
-  }, [clientId, token]);
+  }, [clientId, token, googleLoaded]);
 
   const handleLogout = () => {
     localStorage.removeItem('bill_scanner_token');
