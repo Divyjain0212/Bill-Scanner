@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Upload, Search, RefreshCw, FileText, Lock } from 'lucide-react';
+import { Upload, Search, RefreshCw, FileText, Lock, Check, X } from 'lucide-react';
 import axios from 'axios';
 import * as api from '../api';
 import UploadModal from './UploadModal';
@@ -11,6 +11,8 @@ const Dashboard = () => {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [filters, setFilters] = useState({ personName: '', startDate: '', endDate: '' });
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
   const uniqueNames = [...new Set(bills.map(b => b.appProperties?.personName).filter(Boolean))];
   
   // Auth state
@@ -30,7 +32,8 @@ const Dashboard = () => {
       
       // If authenticated, fetch bills
       setAuthUrl(null);
-      const activeFilters = Object.fromEntries(Object.entries(filters).filter(([_, v]) => v !== ''));
+      const activeFilters = Object.fromEntries(Object.entries(filters).filter(([_, v]) => v.trim() !== ''));
+      setHasSearched(Object.keys(activeFilters).length > 0);
       const data = await api.getBills(activeFilters);
       setBills(data || []);
     } catch (error) {
@@ -118,6 +121,18 @@ const Dashboard = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 fade-in">
+      {successMessage && (
+        <div className="mb-6 p-4 bg-green-50 text-green-700 rounded-xl border border-green-200 flex items-center justify-between fade-in">
+          <div className="flex items-center gap-2">
+            <Check size={20} />
+            <span className="font-medium">{successMessage}</span>
+          </div>
+          <button onClick={() => setSuccessMessage('')} className="text-green-500 hover:text-green-700">
+            <X size={18} />
+          </button>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8">
         <div>
@@ -213,12 +228,22 @@ const Dashboard = () => {
 
       {/* Table Section */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-        <BillTable 
-          bills={bills} 
-          loading={loading} 
-          onDelete={handleBillDeleted}
-          onUpdate={handleBillUpdated}
-        />
+        {hasSearched ? (
+          <BillTable 
+            bills={bills} 
+            loading={loading} 
+            onDelete={handleBillDeleted}
+            onUpdate={handleBillUpdated}
+          />
+        ) : (
+          <div className="p-16 text-center">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-50 mb-4 text-slate-400">
+              <Search size={24} />
+            </div>
+            <h3 className="text-lg font-medium text-slate-800 mb-1">Search for a Bill</h3>
+            <p className="text-slate-500 max-w-sm mx-auto">Enter a person's name or date range above and click refresh to view bills. <br/><br/>You must enter a search criteria to view bills.</p>
+          </div>
+        )}
       </div>
 
       {/* Modals */}
@@ -228,7 +253,10 @@ const Dashboard = () => {
           onClose={() => setIsUploadOpen(false)} 
           onUploadSuccess={() => {
             setIsUploadOpen(false);
+            setFilters({ personName: '', startDate: '', endDate: '' }); // Clear filters so they can search for new bill
             checkAuthAndFetch();
+            setSuccessMessage('Bill added successfully!');
+            setTimeout(() => setSuccessMessage(''), 5000);
           }} 
         />
       )}
